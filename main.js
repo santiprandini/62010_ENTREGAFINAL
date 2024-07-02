@@ -5,7 +5,7 @@ const documentos = [
     { id: 3, text: "Analizado el proyecto de resolución, esta Asesoría General de Gobierno no tiene en el marco de su competencia, observaciones que formular, razón por la cual es de opinión que el Ministro de Producción, Ciencia e Innovación Tecnológica, de estimarlo oportuno y conveniente, podrá proceder a su dictad" }
 ];
 
-// Armamos la función para buscar en los documentos
+// Función para buscar en los documentos
 function buscadorDocumentos(query) {
     const resultados = [];
     documentos.forEach(doc => {
@@ -16,36 +16,78 @@ function buscadorDocumentos(query) {
     return resultados;
 }
 
-// Armamos la función para acumular y mostrar los resultados obtenidos
+// Función para mostrar los resultados de la búsqueda
 function mostrarResultados(query, resultados) {
     const resultadosDiv = document.getElementById('resultados');
-    const nuevoResultado = document.createElement('p'); // Creamos un nuevo párrafo para cada búsqueda
+    resultadosDiv.innerHTML = ''; // Limpiamos resultados anteriores
+
     if (resultados.length > 0) {
-        nuevoResultado.textContent = `Palabra "${query}" encontrada en los documentos con ID: ${resultados.join(", ")}`;
-    } else {
-        nuevoResultado.textContent = `No se encontraron documentos que contengan la palabra "${query}".`;
-    }
-    resultadosDiv.appendChild(nuevoResultado); // Añadimos el nuevo resultado al div
-}
+        const ultimoResultado = resultados[resultados.length - 1]; // Último resultado encontrado
+        const documento = documentos.find(doc => doc.id === ultimoResultado);
 
-// Armamos la función para iniciar el proceso de búsqueda con un prompt
-function iniciarBusqueda() {
-    let query = prompt("Ingresa una palabra para buscar en los documentos (o ingresa '-1' para salir):");
-    while (query !== '-1') {
-        if (query.trim() !== "") {
-            const resultados = buscadorDocumentos(query);
-            mostrarResultados(query, resultados);
+        if (documento) {
+            const texto = documento.text;
+            const textoResaltado = resaltarTexto(query, texto); // Función para resaltar el texto
+            const nuevoResultado = document.createElement('p');
+            nuevoResultado.innerHTML = `Palabra "${query}" encontrada en el documento con ID ${ultimoResultado}: ${textoResaltado}`;
+            resultadosDiv.appendChild(nuevoResultado);
         } else {
-            alert("Por favor, ingresa una palabra para buscar.");
+            const nuevoResultado = document.createElement('p');
+            nuevoResultado.textContent = `No se encontró el documento con ID ${ultimoResultado}.`;
+            resultadosDiv.appendChild(nuevoResultado);
         }
-        query = prompt("Ingresa una palabra para buscar en los documentos (o ingresa '-1' para salir):");
+    } else {
+        const nuevoResultado = document.createElement('p');
+        nuevoResultado.textContent = `No se encontraron documentos que contengan la palabra "${query}".`;
+        resultadosDiv.appendChild(nuevoResultado);
     }
-    // Armamos un mensaje para cuando finaliza la búsqueda
-    const resultadosDiv = document.getElementById('resultados');
-    const mensajeFinal = document.createElement('p');
-    mensajeFinal.textContent = "Búsqueda finalizada.";
-    resultadosDiv.appendChild(mensajeFinal);
+    guardarBusqueda(query, resultados); // Guardar la búsqueda después de mostrar resultados
 }
 
-// Iniciamos la búsqueda
-iniciarBusqueda();
+// Función para resaltar la palabra buscada en el texto del documento
+function resaltarTexto(query, texto) {
+    return texto.replace(new RegExp(query, 'gi'), match => `<b>${match}</b>`);
+}
+
+// Función para guardar la búsqueda en el local storage
+function guardarBusqueda(query, resultados) {
+    let busquedasAnteriores = JSON.parse(localStorage.getItem('busquedasAnteriores')) || [];
+    busquedasAnteriores.push({ query, resultados });
+    localStorage.setItem('busquedasAnteriores', JSON.stringify(busquedasAnteriores));
+    mostrarBusquedasAnteriores();
+}
+
+// Función para mostrar las búsquedas anteriores
+function mostrarBusquedasAnteriores() {
+    const busquedasAnterioresDiv = document.getElementById('busquedasAnteriores');
+    busquedasAnterioresDiv.innerHTML = ''; // Limpiar búsquedas anteriores
+    let busquedasAnteriores = JSON.parse(localStorage.getItem('busquedasAnteriores')) || [];
+    busquedasAnteriores.forEach(busqueda => {
+        const nuevoResultado = document.createElement('div');
+        nuevoResultado.classList.add('result-item');
+        nuevoResultado.textContent = `Palabra "${busqueda.query}" encontrada en los documentos con ID: ${busqueda.resultados.join(", ")}`;
+        busquedasAnterioresDiv.appendChild(nuevoResultado);
+    });
+}
+
+// Función para limpiar las búsquedas anteriores
+function limpiarBusquedasAnteriores() {
+    localStorage.removeItem('busquedasAnteriores');
+    mostrarBusquedasAnteriores();
+}
+
+// Función para iniciar la búsqueda
+function iniciarBusqueda() {
+    const query = document.getElementById('searchInput').value;
+    if (query.trim() !== "") {
+        const resultados = buscadorDocumentos(query);
+        mostrarResultados(query, resultados);
+    } else {
+        alert("Por favor, ingresa una palabra para buscar.");
+    }
+}
+
+// Event listeners
+document.getElementById('searchButton').addEventListener('click', iniciarBusqueda);
+document.getElementById('clearButton').addEventListener('click', limpiarBusquedasAnteriores);
+document.addEventListener('DOMContentLoaded', mostrarBusquedasAnteriores);
