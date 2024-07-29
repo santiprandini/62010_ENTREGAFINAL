@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Documentos</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .result-item {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Buscador de noticias sobre la Provincia de Buenos Aires</h1>
+
+        <div class="search-section mb-4">
+            <label for="searchInput" class="font-weight-bold">Ingresa una palabra para buscar:</label>
+            <div class="input-group">
+                <input type="text" id="searchInput" class="form-control">
+                <div class="input-group-append">
+                    <button id="searchButton" class="btn btn-primary">Buscar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h2>Total de noticias en la última semana</h2>
+            <p id="totalNoticias">Cargando...</p>
+        </div>
+
+        <div class="resultados mb-4" id="resultados"></div>
+
+        <div class="busquedas-anteriores">
+            <h2>Búsquedas Anteriores</h2>
+            <div id="busquedasAnteriores"></div>
+            <button class="btn btn-danger mt-3" id="clearButton">Limpiar Búsquedas Anteriores</button>
+        </div>
+    </div>
+
+
+    <script src="main.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
