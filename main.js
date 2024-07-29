@@ -1,46 +1,77 @@
-// Declaramos los documentos que serán la base del buscador, en este caso dictámenes jurídicos
-const documentos = [
-    { id: 1, text: "Llamado a dictaminar, este Organismo Asesor toma conocimiento de lo actuado y -sin abrir juicio sobre los montos resultantes por ser materia ajena a su competencia- no tiene observaciones que formular al trámite llevado a cabo, razón por la cual es de opinión que puede procederse a la suscripción del Acta de Redeterminación y posterior aprobación mediante el dictado del acto administrativo correspondiente." },
-    { id: 2, text: "Analizado lo actuado en el marco de las normas jurídicas referenciadas y sobre la base de los informes emitidos por las Dependencias técnicas intervinientes, esta Asesoría General de Gobierno no tiene, desde el punto de vista de su competencia, objeciones que formular a la medida impulsada, razón por la cual es de opinión que puede continuarse con el trámite tendiente a dictar el acto administrativo propiciado (conf. arts. 20 de la Ley Nº 15.477 y 3º, 4º, siguientes y concordantes de la Ley Nº 11.459 y los Decretos Nº 531/19 y Nº 89/22)" },
-    { id: 3, text: "Analizado el proyecto de resolución, esta Asesoría General de Gobierno no tiene en el marco de su competencia, observaciones que formular, razón por la cual es de opinión que el Ministro de Producción, Ciencia e Innovación Tecnológica, de estimarlo oportuno y conveniente, podrá proceder a su dictad" }
-];
+// Clave de NewsAPI
+const API_KEY = 'cca26c3d651e4003881fc4142a7ffd5d'; 
+
+// Función para obtener noticias de NewsAPI
+async function obtenerNoticias() {
+    try {
+        const fechaHoy = new Date();
+        const fechaInicio = new Date(fechaHoy);
+        fechaInicio.setDate(fechaHoy.getDate() - 7); // Fecha de hace 7 días
+
+        // Formatear fechas en formato YYYY-MM-DD
+        const fechaHoyFormateada = fechaHoy.toISOString().split('T')[0];
+        const fechaInicioFormateada = fechaInicio.toISOString().split('T')[0];
+
+        const respuesta = await fetch(`https://newsapi.org/v2/everything?q="Provincia de Buenos Aires"&from=${fechaInicioFormateada}&to=${fechaHoyFormateada}&language=es&sortBy=popularity&apiKey=${API_KEY}`);
+        const datos = await respuesta.json();
+        return datos.articles;
+    } catch (error) {
+        console.error('Error al obtener noticias:', error);
+        return [];
+    }
+}
+
 
 // Función para buscar en los documentos
-function buscadorDocumentos(query) {
+async function buscadorDocumentos(query) {
+    const documentos = await obtenerNoticias();
     const resultados = [];
-    documentos.forEach(doc => {
-        if (doc.text.toLowerCase().includes(query.toLowerCase())) {
-            resultados.push(doc.id);
+    documentos.forEach((doc, index) => {
+        const title = doc.title ? doc.title.toLowerCase() : '';
+        const description = doc.description ? doc.description.toLowerCase() : '';
+        if (title.includes(query.toLowerCase()) || description.includes(query.toLowerCase())) {
+            resultados.push(index);
         }
     });
     return resultados;
 }
 
+// Función para mostrar el total de noticias del día
+async function mostrarTotalNoticias() {
+    const documentos = await obtenerNoticias();
+    const totalNoticias = documentos.length;
+    document.getElementById('totalNoticias').textContent = `Total de noticias en la última semana: ${totalNoticias}`;
+}
+
 // Función para mostrar los resultados de la búsqueda
-function mostrarResultados(query, resultados) {
+async function mostrarResultados(query) {
     const resultadosDiv = document.getElementById('resultados');
     resultadosDiv.innerHTML = ''; // Limpiamos resultados anteriores
 
-    if (resultados.length > 0) {
-        const ultimoResultado = resultados[resultados.length - 1]; // Último resultado encontrado
-        const documento = documentos.find(doc => doc.id === ultimoResultado);
+    const documentos = await obtenerNoticias();
+    const resultados = await buscadorDocumentos(query);
 
-        if (documento) {
-            const texto = documento.text;
-            const textoResaltado = resaltarTexto(query, texto); // Función para resaltar el texto
+    if (resultados.length > 0) {
+        resultados.forEach(resultado => {
+            const doc = documentos[resultado];
+            const textoResaltado = resaltarTexto(query, `${doc.title || ''}: ${doc.description || ''}`);
+            const urlNoticia = doc.url || ''; // Obtener URL de la noticia
+            const fuenteNoticia = doc.source.name || 'Fuente no disponible'; // Obtener fuente de la noticia
+
             const nuevoResultado = document.createElement('p');
-            nuevoResultado.innerHTML = `Palabra "${query}" encontrada en el documento con ID ${ultimoResultado}: ${textoResaltado}`;
+            nuevoResultado.innerHTML = `
+                Palabra "${query}" encontrada en: ${textoResaltado} <br>
+                <a href="${urlNoticia}" target="_blank">Leer noticia completa</a> <br>
+                <span><strong>Fuente:</strong> ${fuenteNoticia}</span>
+            `;
             resultadosDiv.appendChild(nuevoResultado);
-        } else {
-            const nuevoResultado = document.createElement('p');
-            nuevoResultado.textContent = `No se encontró el documento con ID ${ultimoResultado}.`;
-            resultadosDiv.appendChild(nuevoResultado);
-        }
+        });
     } else {
         const nuevoResultado = document.createElement('p');
         nuevoResultado.textContent = `No se encontraron documentos que contengan la palabra "${query}".`;
         resultadosDiv.appendChild(nuevoResultado);
     }
+
     guardarBusqueda(query, resultados); // Guardar la búsqueda después de mostrar resultados
 }
 
@@ -80,8 +111,7 @@ function limpiarBusquedasAnteriores() {
 function iniciarBusqueda() {
     const query = document.getElementById('searchInput').value;
     if (query.trim() !== "") {
-        const resultados = buscadorDocumentos(query);
-        mostrarResultados(query, resultados);
+        mostrarResultados(query);
     } else {
         alert("Por favor, ingresa una palabra para buscar.");
     }
@@ -90,4 +120,7 @@ function iniciarBusqueda() {
 // Event listeners
 document.getElementById('searchButton').addEventListener('click', iniciarBusqueda);
 document.getElementById('clearButton').addEventListener('click', limpiarBusquedasAnteriores);
-document.addEventListener('DOMContentLoaded', mostrarBusquedasAnteriores);
+document.addEventListener('DOMContentLoaded', () => {
+    mostrarBusquedasAnteriores();
+    mostrarTotalNoticias(); // Mostrar el total de noticias al cargar la página
+});
